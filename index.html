@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+            max-width: 800px; /* Increased width for better layout */
+            margin: auto;
+        }
+        input[type="text"], textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover:not(.disabled) {
+            background-color: #218838;
+        }
+        button.disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .history-entry {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #fff;
+            position: relative;
+        }
+        .history-entry button.delete-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #dc3545;
+        }
+        .history-entry button.delete-button:hover:not(.disabled) {
+            background-color: #c82333;
+        }
+        h1 {
+            text-align: center;
+        }
+        h3 {
+            margin-top: 20px;
+        }
+        .created-by {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        /* Style for Delete All and Copy All History Buttons */
+        #deleteAllHistory, #copyAllHistory, #downloadCurrentSession {
+            background-color: #17a2b8; /* Updated to differentiate from other buttons */
+        }
+        #deleteAllHistory:hover:not(.disabled), #copyAllHistory:hover:not(.disabled), #downloadCurrentSession:hover:not(.disabled) {
+            background-color: #138496;
+        }
+        /* Style for Download History button */
+        #downloadData {
+            background-color: #ffc107;
+        }
+        #downloadData:hover:not(.disabled) {
+            background-color: #e0a800;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tracking History</h1>
+    <p class="created-by">Created by Sourabh</p>
+
+    <input type="text" id="userName" placeholder="Enter your name" />
+    <button id="startButton">Start</button>
+    <button id="pauseButton" class="disabled" disabled>Pause</button>
+    <button id="resumeButton" class="disabled" disabled>Resume</button>
+    <button id="stopButton" class="disabled" disabled>Stop</button>
+    <button id="copyData" class="disabled" disabled>Copy Current Session</button>
+    <button id="copyAllHistory" class="disabled" disabled>Copy All History</button>
+    <button id="downloadData" class="disabled" disabled>Download History</button>
+    <!-- New Download Current Session Button -->
+    <button id="downloadCurrentSession" class="disabled" disabled>Download Current Session</button>
+
+    <h3>Session Status</h3>
+    <p id="nameDisplay">Name: <span class="highlight">N/A</span></p>
+    <p id="startTimeDisplay">Start Time: <span class="highlight">N/A</span></p>
+    <p id="stopTimeDisplay">Stop Time: <span class="highlight">N/A</span></p>
+    <p id="totalTimeDisplay">Total Time: <span class="highlight">N/A</span></p>
+    <p id="pauseTimeDisplay">Pause Time: <span class="highlight">N/A</span></p>
+    <p id="resumeTimeDisplay">Resume Time: <span class="highlight">N/A</span></p>
+    <p id="statusDisplay">Status: <span class="highlight">N/A</span></p>
+
+    <h3>Edit Tracking History</h3>
+    <textarea id="editHistory" placeholder="Edit your tracking history here..."></textarea>
+    <button id="saveEditedHistory" class="disabled" disabled>Save Edited History</button>
+
+    <h3>All Tracking History</h3>
+    <!-- Existing Delete All and Copy All History Buttons -->
+    <button id="deleteAllHistory" class="disabled" disabled>Delete All History</button>
+    <button id="copyAllHistory" class="disabled" disabled>Copy All History</button>
+    <button id="downloadCurrentSession" class="disabled" disabled>Download Current Session</button> <!-- Ensure this is only added once -->
+    <div id="allHistoryContainer"></div>
+    
+    <script>
+        let isTracking = false;
+        let startTime, stopTime, totalTime = 0;
+        let pauseTime, resumeTime;
+        const history = []; // Array to store session history
+        let currentSession = null;
+
+        // Load history from localStorage upon page load
+        window.onload = function() {
+            const savedHistory = JSON.parse(localStorage.getItem('trackingHistory'));
+            if (savedHistory && Array.isArray(savedHistory)) {
+                history.push(...savedHistory);
+                displayHistory();
+                updateButtonState('copyData', history.length > 0); // Enable if history exists
+                updateButtonState('copyAllHistory', history.length > 0);
+                updateButtonState('downloadData', history.length > 0);
+                updateButtonState('deleteAllHistory', history.length > 0);
+                updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
+            }
+        };
+
+        // Function to update the state of buttons
+        function updateButtonState(buttonId, enable) {
+            const button = document.getElementById(buttonId);
+            if (enable) {
+                button.disabled = false;
+                button.classList.remove('disabled');
+            } else {
+                button.disabled = true;
+                button.classList.add('disabled');
+            }
+        }
+
+        // Function to format time in minutes only
+        function formatTime(ms) {
+            const totalMinutes = Math.floor(ms / 60000);
+            const minuteText = totalMinutes === 1 ? 'minute' : 'minutes';
+            return `${totalMinutes} ${minuteText}`;
+        }
+
+        // Function to update the display elements
+        function updateDisplay(id, content) {
+            document.getElementById(id).innerHTML = content;
+        }
+
+        // Function to update the status
+        function updateStatus(status) {
+            updateDisplay('statusDisplay', `Status: <span class="highlight">${status}</span>`);
+        }
+
+        // Function to display all history entries
+        function displayHistory() {
+            const container = document.getElementById('allHistoryContainer');
+            container.innerHTML = ''; // Clear existing history
+            history.forEach((session, index) => {
+                const entry = document.createElement('div');
+                entry.className = 'history-entry';
+                entry.innerHTML = `<strong>Session ${index + 1}</strong><br>
+                                  Name: ${session.name}<br>
+                                  Start Time: ${session.startTime}<br>
+                                  Stop Time: ${session.stopTime}<br>
+                                  Total Time: ${session.totalTime}`;
+                
+                // Create Delete button for each entry
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'delete-button';
+                deleteButton.addEventListener('click', function() {
+                    if (confirm(`Are you sure you want to delete Session ${index + 1}?`)) {
+                        deleteHistoryEntry(index);
+                    }
+                });
+                entry.appendChild(deleteButton);
+
+                container.appendChild(entry);
+            });
+        }
+
+        // Function to save history to localStorage
+        function saveHistoryToLocalStorage() {
+            localStorage.setItem('trackingHistory', JSON.stringify(history));
+        }
+
+        // Function to add session to history and save
+        function addSessionToHistory(session) {
+            history.push(session);
+            displayHistory();
+            saveHistoryToLocalStorage();
+            updateButtonState('copyData', true); // Enable Copy Current Session
+            updateButtonState('copyAllHistory', history.length > 0); // Enable Copy All History
+            updateButtonState('downloadData', history.length > 0);
+            updateButtonState('deleteAllHistory', history.length > 0);
+            updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
+        }
+
+        // Function to delete a specific history entry
+        function deleteHistoryEntry(index) {
+            history.splice(index, 1);
+            displayHistory();
+            saveHistoryToLocalStorage();
+            const hasHistory = history.length > 0;
+            updateButtonState('copyData', hasHistory); // Enable or disable based on history
+            updateButtonState('copyAllHistory', hasHistory);
+            updateButtonState('downloadData', hasHistory);
+            updateButtonState('deleteAllHistory', hasHistory);
+            updateButtonState('downloadCurrentSession', hasHistory); // Enable or disable Download Current Session
+        }
+
+        // Function to delete all history entries
+        function deleteAllHistoryEntries() {
+            if (history.length === 0) return;
+            if (confirm('Are you sure you want to delete all tracking history?')) {
+                history.length = 0; // Clear the array
+                displayHistory();
+                saveHistoryToLocalStorage();
+                updateButtonState('copyData', false); // Disable Copy Current Session
+                updateButtonState('copyAllHistory', false); // Disable Copy All History
+                updateButtonState('downloadData', false);
+                updateButtonState('deleteAllHistory', false);
+                updateButtonState('downloadCurrentSession', false); // Disable Download Current Session
+                alert('All tracking history has been deleted.');
+            }
+        }
+
+        // Start Button Event Listener
+        document.getElementById('startButton').addEventListener('click', function() {
+            const userNameInput = document.getElementById('userName').value.trim();
+            if (!userNameInput) {
+                alert('Please enter your name before starting the timer.');
+                return;
+            }
+
+            if (isTracking) {
+                alert("Tracking is already in progress. Please stop the current session before starting a new one.");
+                return;
+            }
+
+            isTracking = true;
+            startTime = Date.now();
+            updateDisplay('nameDisplay', `Name: <span class="highlight">${userNameInput}</span>`);
+            updateDisplay('startTimeDisplay', `Start Time: <span class="highlight">${new Date(startTime).toLocaleString()}</span>`);
+            updateDisplay('stopTimeDisplay', `Stop Time: <span class="highlight">N/A</span>`);
+            updateDisplay('totalTimeDisplay', `Total Time: <span class="highlight">N/A</span>`);
+            updateDisplay('pauseTimeDisplay', `Pause Time: <span class="highlight">N/A</span>`);
+            updateDisplay('resumeTimeDisplay', `Resume Time: <span class="highlight">N/A</span>`);
+            updateButtonState('startButton', false);
+            updateButtonState('pauseButton', true);
+            updateButtonState('stopButton', true);
+            updateButtonState('copyData', false); // Disable Copy Current Session during tracking
+            updateButtonState('copyAllHistory', history.length > 0);
+            updateButtonState('downloadData', history.length > 0);
+            updateButtonState('deleteAllHistory', history.length > 0);
+            updateButtonState('downloadCurrentSession', history.length > 0); // Maintain state
+            updateStatus('Tracking');
+
+            // Initialize current session
+            currentSession = {
+                name: userNameInput,
+                startTime: new Date(startTime).toLocaleString(),
+                stopTime: null,
+                totalTime: null
+            };
+        });
+
+        // Stop Button Event Listener
+        document.getElementById('stopButton').addEventListener('click', function() {
+            if (!isTracking) return;
+
+            isTracking = false;
+            stopTime = Date.now();
+            updateDisplay('stopTimeDisplay', `Stop Time: <span class="highlight">${new Date(stopTime).toLocaleString()}</span>`);
+            
+            // Calculate total time in minutes
+            totalTime = stopTime - startTime;
+            const formattedTotalTime = formatTime(totalTime);
+            updateDisplay('totalTimeDisplay', `Total Time: <span class="highlight">${formattedTotalTime}</span>`);
+
+            // Update current session
+            currentSession.stopTime = new Date(stopTime).toLocaleString();
+            currentSession.totalTime = formattedTotalTime;
+
+            addSessionToHistory(currentSession); // Save session to history
+            currentSession = null; // Reset current session
+
+            updateButtonState('startButton', true);
+            updateButtonState('pauseButton', false);
+            updateButtonState('resumeButton', false);
+            updateButtonState('stopButton', false);
+            // Enable Copy Data since a session has been added
+            updateButtonState('copyData', history.length > 0);
+            updateButtonState('copyAllHistory', history.length > 0);
+            updateButtonState('downloadData', history.length > 0);
+            updateButtonState('deleteAllHistory', history.length > 0);
+            updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
+            updateStatus('Stopped');
+        });
+
+        // Pause Button Event Listener
+        document.getElementById('pauseButton').addEventListener('click', function() {
+            if (!isTracking) return;
+
+            pauseTime = Date.now();
+            updateDisplay('pauseTimeDisplay', `Pause Time: <span class="highlight">${new Date(pauseTime).toLocaleString()}</span>`);
+            updateButtonState('pauseButton', false);
+            updateButtonState('resumeButton', true);
+            updateStatus('Paused');
+        });
+
+        // Resume Button Event Listener
+        document.getElementById('resumeButton').addEventListener('click', function() {
+            if (!isTracking) return;
+
+            resumeTime = Date.now();
+            startTime += (resumeTime - pauseTime); // Adjust the start time
+            updateDisplay('resumeTimeDisplay', `Resume Time: <span class="highlight">${new Date(resumeTime).toLocaleString()}</span>`);
+            updateButtonState('pauseButton', true);
+            updateButtonState('resumeButton', false);
+            updateStatus('Tracking');
+        });
+
+        // Copy Current Session Button Event Listener
+        document.getElementById('copyData').addEventListener('click', function() {
+            // Ensure there's at least one session in history
+            if (history.length === 0) {
+                alert('No session data available to copy.');
+                return;
+            }
+
+            const lastSession = history[history.length - 1];
+            const sessionText = `Name: ${lastSession.name}\nStart Time: ${lastSession.startTime}\nStop Time: ${lastSession.stopTime}\nTotal Time: ${lastSession.totalTime}`;
+            navigator.clipboard.writeText(sessionText)
+                .then(() => alert('Current session data copied to clipboard!'))
+                .catch(err => alert('Failed to copy session data.'));
+        });
+
+        // Copy All History Button Event Listener
+        document.getElementById('copyAllHistory').addEventListener('click', function() {
+            if (history.length === 0) {
+                alert('No history data available to copy.');
+                return;
+            }
+
+            const allHistoryText = history.map((session, index) => 
+                `Session ${index + 1}\nName: ${session.name}\nStart Time: ${session.startTime}\nStop Time: ${session.stopTime}\nTotal Time: ${session.totalTime}\n`
+            ).join('\n');
+
+            navigator.clipboard.writeText(allHistoryText)
+                .then(() => alert('All history data copied to clipboard!'))
+                .catch(err => alert('Failed to copy history data.'));
+        });
+
+        // Download Data Button Event Listener (Download All History)
+        document.getElementById('downloadData').addEventListener('click', function() {
+            if (history.length === 0) {
+                alert('No history to download.');
+                return;
+            }
+            const historyText = history.map((session, index) => 
+                `Session ${index + 1}\nName: ${session.name}\nStart Time: ${session.startTime}\nStop Time: ${session.stopTime}\nTotal Time: ${session.totalTime}\n`
+            ).join('\n');
+            const blob = new Blob([historyText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tracking_history.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Delete All History Button Event Listener
+        document.getElementById('deleteAllHistory').addEventListener('click', function() {
+            deleteAllHistoryEntries();
+        });
+
+        // Save Edited History Button Event Listener
+        document.getElementById('saveEditedHistory').addEventListener('click', function() {
+            const editedHistory = document.getElementById('editHistory').value.trim();
+            if (!editedHistory) {
+                alert('Please enter some history to save.');
+                return;
+            }
+
+            // Parse the edited history and update the history array
+            const sessions = editedHistory.split('\n\n');
+            const newHistory = [];
+            let isValid = true;
+
+            sessions.forEach(sessionText => {
+                const lines = sessionText.split('\n');
+                if (lines.length < 4) {
+                    isValid = false;
+                    return;
+                }
+                const nameLine = lines.find(line => line.startsWith('Name:'));
+                const startTimeLine = lines.find(line => line.startsWith('Start Time:'));
+                const stopTimeLine = lines.find(line => line.startsWith('Stop Time:'));
+                const totalTimeLine = lines.find(line => line.startsWith('Total Time:'));
+
+                if (!nameLine || !startTimeLine || !stopTimeLine || !totalTimeLine) {
+                    isValid = false;
+                    return;
+                }
+
+                const name = nameLine.split(': ')[1];
+                const startTime = startTimeLine.split(': ')[1];
+                const stopTime = stopTimeLine.split(': ')[1];
+                const totalTime = totalTimeLine.split(': ')[1];
+
+                newHistory.push({ name, startTime, stopTime, totalTime });
+            });
+
+            if (!isValid) {
+                alert('Edited history format is incorrect. Please ensure each session has Name, Start Time, Stop Time, and Total Time.');
+                return;
+            }
+
+            // Update history array
+            history.length = 0; // Clear existing history
+            history.push(...newHistory);
+            displayHistory();
+            saveHistoryToLocalStorage();
+            const hasHistory = history.length > 0;
+            updateButtonState('copyData', hasHistory); // Enable or disable based on history
+            updateButtonState('copyAllHistory', hasHistory);
+            updateButtonState('downloadData', hasHistory);
+            updateButtonState('deleteAllHistory', hasHistory);
+            updateButtonState('downloadCurrentSession', hasHistory); // Enable or disable Download Current Session
+            alert('Edited History Saved Successfully!');
+        });
+
+        // Enable Save Edited History button when textarea is modified
+        document.getElementById('editHistory').addEventListener('input', function() {
+            const content = this.value.trim();
+            updateButtonState('saveEditedHistory', content.length > 0);
+        });
+
+        // New: Download Current Session Button Event Listener
+        document.getElementById('downloadCurrentSession').addEventListener('click', function() {
+            if (history.length === 0) {
+                alert('No session data available to download.');
+                return;
+            }
+
+            const lastSession = history[history.length - 1];
+            const sessionText = `Name: ${lastSession.name}\nStart Time: ${lastSession.startTime}\nStop Time: ${lastSession.stopTime}\nTotal Time: ${lastSession.totalTime}`;
+
+            // Sanitize filename by removing invalid characters
+            const sanitizeFilename = (name) => {
+                return name.replace(/[^a-z0-9_\-]/gi, '_');
+            };
+
+            const fileName = `${sanitizeFilename(lastSession.name)}_session.txt`;
+
+            const blob = new Blob([sessionText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
