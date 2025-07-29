@@ -3,487 +3,774 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracking History</title>
+    <title>Modern Todo App</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
-            border-radius: 8px;
-            max-width: 800px; /* Increased width for better layout */
-            margin: auto;
-        }
-        input[type="text"], textarea {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ccc;
+        * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
-        button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            background-color: #28a745;
-            color: white;
+
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #5855eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            z-index: 1000;
         }
-        button:hover:not(.disabled) {
-            background-color: #218838;
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-color);
         }
-        button.disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+
+        .todo-form {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
         }
-        .highlight {
-            font-weight: bold;
-            color: #007bff;
+
+        .form-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
-        .history-entry {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 5px 0;
-            background-color: #fff;
-            position: relative;
+
+        .form-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            transition: var(--transition);
         }
-        .history-entry button.delete-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #dc3545;
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
         }
-        .history-entry button.delete-button:hover:not(.disabled) {
-            background-color: #c82333;
+
+        .btn {
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
         }
-        h1 {
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .priority-select {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--bg-color);
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 2rem;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.875rem;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .todo-list {
+            space-y: 1rem;
+        }
+
+        .todo-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: var(--transition);
+            margin-bottom: 1rem;
+            cursor: move;
+        }
+
+        .todo-item:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .todo-item.completed {
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .todo-item.completed:hover {
+            transform: none;
+        }
+
+        .todo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .todo-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 0.25rem;
+            cursor: pointer;
+        }
+
+        .todo-text {
+            flex: 1;
+        }
+
+        .todo-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .todo-title.completed {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .todo-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .todo-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .priority-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: rgb(239 68 68 / 0.1);
+            color: var(--danger-color);
+        }
+
+        .priority-medium {
+            background: rgb(245 158 11 / 0.1);
+            color: var(--warning-color);
+        }
+
+        .priority-low {
+            background: rgb(16 185 129 / 0.1);
+            color: var(--success-color);
+        }
+
+        .todo-date {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .stats {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
             text-align: center;
         }
-        h3 {
-            margin-top: 20px;
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-color);
         }
-        .created-by {
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .empty-state {
             text-align: center;
-            font-style: italic;
-            margin-bottom: 20px;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
         }
-        /* Style for Delete All and Copy All History Buttons */
-        #deleteAllHistory, #copyAllHistory, #downloadCurrentSession {
-            background-color: #17a2b8; /* Updated to differentiate from other buttons */
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
-        #deleteAllHistory:hover:not(.disabled), #copyAllHistory:hover:not(.disabled), #downloadCurrentSession:hover:not(.disabled) {
-            background-color: #138496;
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-group {
+                flex-direction: column;
+            }
+
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+            }
+
+            .todo-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .todo-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
-        /* Style for Download History button */
-        #downloadData {
-            background-color: #ffc107;
+
+        .dragging {
+            opacity: 0.5;
         }
-        #downloadData:hover:not(.disabled) {
-            background-color: #e0a800;
+
+        .drag-over {
+            border-color: var(--primary-color);
+            border-style: dashed;
         }
     </style>
 </head>
 <body>
+    <div class="theme-toggle" id="themeToggle">
+        <span id="themeIcon">🌙</span>
+    </div>
 
-    <h1>Tracking History</h1>
-    <p class="created-by">Created by Sourabh</p>
+    <div class="container">
+        <div class="header">
+            <h1>Todo App</h1>
+            <p>Stay organized and boost your productivity</p>
+        </div>
 
-    <input type="text" id="userName" placeholder="Enter your name" />
-    <button id="startButton">Start</button>
-    <button id="pauseButton" class="disabled" disabled>Pause</button>
-    <button id="resumeButton" class="disabled" disabled>Resume</button>
-    <button id="stopButton" class="disabled" disabled>Stop</button>
-    <button id="copyData" class="disabled" disabled>Copy Current Session</button>
-    <button id="copyAllHistory" class="disabled" disabled>Copy All History</button>
-    <button id="downloadData" class="disabled" disabled>Download History</button>
-    <!-- New Download Current Session Button -->
-    <button id="downloadCurrentSession" class="disabled" disabled>Download Current Session</button>
+        <div class="stats" id="stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalTasks">0</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completedTasks">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="pendingTasks">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completionRate">0%</div>
+                    <div class="stat-label">Completion Rate</div>
+                </div>
+            </div>
+        </div>
 
-    <h3>Session Status</h3>
-    <p id="nameDisplay">Name: <span class="highlight">N/A</span></p>
-    <p id="startTimeDisplay">Start Time: <span class="highlight">N/A</span></p>
-    <p id="stopTimeDisplay">Stop Time: <span class="highlight">N/A</span></p>
-    <p id="totalTimeDisplay">Total Time: <span class="highlight">N/A</span></p>
-    <p id="pauseTimeDisplay">Pause Time: <span class="highlight">N/A</span></p>
-    <p id="resumeTimeDisplay">Resume Time: <span class="highlight">N/A</span></p>
-    <p id="statusDisplay">Status: <span class="highlight">N/A</span></p>
+        <div class="todo-form">
+            <div class="form-group">
+                <input type="text" id="todoTitle" class="form-input" placeholder="What needs to be done?" maxlength="100">
+                <select id="todoPriority" class="priority-select">
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+                <button id="addTodo" class="btn btn-primary">Add Task</button>
+            </div>
+            <textarea id="todoDescription" class="form-input" placeholder="Add a description (optional)" rows="2" maxlength="500"></textarea>
+        </div>
 
-    <h3>Edit Tracking History</h3>
-    <textarea id="editHistory" placeholder="Edit your tracking history here..."></textarea>
-    <button id="saveEditedHistory" class="disabled" disabled>Save Edited History</button>
+        <div class="filters">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search tasks...">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+                <button class="filter-btn" data-filter="high">High Priority</button>
+                <button class="filter-btn" data-filter="medium">Medium Priority</button>
+                <button class="filter-btn" data-filter="low">Low Priority</button>
+            </div>
+        </div>
 
-    <h3>All Tracking History</h3>
-    <!-- Existing Delete All and Copy All History Buttons -->
-    <button id="deleteAllHistory" class="disabled" disabled>Delete All History</button>
-    <button id="copyAllHistory" class="disabled" disabled>Copy All History</button>
-    <button id="downloadCurrentSession" class="disabled" disabled>Download Current Session</button> <!-- Ensure this is only added once -->
-    <div id="allHistoryContainer"></div>
-    
+        <div id="todoList" class="todo-list">
+            <!-- Todos will be dynamically added here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <h3>No tasks found</h3>
+            <p>Add a new task to get started!</p>
+        </div>
+    </div>
+
     <script>
-        let isTracking = false;
-        let startTime, stopTime, totalTime = 0;
-        let pauseTime, resumeTime;
-        const history = []; // Array to store session history
-        let currentSession = null;
-
-        // Load history from localStorage upon page load
-        window.onload = function() {
-            const savedHistory = JSON.parse(localStorage.getItem('trackingHistory'));
-            if (savedHistory && Array.isArray(savedHistory)) {
-                history.push(...savedHistory);
-                displayHistory();
-                updateButtonState('copyData', history.length > 0); // Enable if history exists
-                updateButtonState('copyAllHistory', history.length > 0);
-                updateButtonState('downloadData', history.length > 0);
-                updateButtonState('deleteAllHistory', history.length > 0);
-                updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
-            }
-        };
-
-        // Function to update the state of buttons
-        function updateButtonState(buttonId, enable) {
-            const button = document.getElementById(buttonId);
-            if (enable) {
-                button.disabled = false;
-                button.classList.remove('disabled');
-            } else {
-                button.disabled = true;
-                button.classList.add('disabled');
-            }
-        }
-
-        // Function to format time in minutes only
-        function formatTime(ms) {
-            const totalMinutes = Math.floor(ms / 60000);
-            const minuteText = totalMinutes === 1 ? 'minute' : 'minutes';
-            return `${totalMinutes} ${minuteText}`;
-        }
-
-        // Function to update the display elements
-        function updateDisplay(id, content) {
-            document.getElementById(id).innerHTML = content;
-        }
-
-        // Function to update the status
-        function updateStatus(status) {
-            updateDisplay('statusDisplay', `Status: <span class="highlight">${status}</span>`);
-        }
-
-        // Function to display all history entries
-        function displayHistory() {
-            const container = document.getElementById('allHistoryContainer');
-            container.innerHTML = ''; // Clear existing history
-            history.forEach((session, index) => {
-                const entry = document.createElement('div');
-                entry.className = 'history-entry';
-                entry.innerHTML = `<strong>Session ${index + 1}</strong><br>
-                                  Name: ${session.name}<br>
-                                  Start Time: ${session.startTime}<br>
-                                  Stop Time: ${session.stopTime}<br>
-                                  Total Time: ${session.totalTime}`;
+        class TodoApp {
+            constructor() {
+                this.todos = this.loadTodos();
+                this.currentFilter = 'all';
+                this.searchQuery = '';
+                this.draggedElement = null;
                 
-                // Create Delete button for each entry
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete';
-                deleteButton.className = 'delete-button';
-                deleteButton.addEventListener('click', function() {
-                    if (confirm(`Are you sure you want to delete Session ${index + 1}?`)) {
-                        deleteHistoryEntry(index);
-                    }
+                this.initializeElements();
+                this.bindEvents();
+                this.renderTodos();
+                this.updateStats();
+                this.initializeTheme();
+            }
+
+            initializeElements() {
+                this.todoList = document.getElementById('todoList');
+                this.todoTitle = document.getElementById('todoTitle');
+                this.todoDescription = document.getElementById('todoDescription');
+                this.todoPriority = document.getElementById('todoPriority');
+                this.addButton = document.getElementById('addTodo');
+                this.searchInput = document.getElementById('searchInput');
+                this.emptyState = document.getElementById('emptyState');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.themeIcon = document.getElementById('themeIcon');
+            }
+
+            bindEvents() {
+                this.addButton.addEventListener('click', () => this.addTodo());
+                this.todoTitle.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addTodo();
                 });
-                entry.appendChild(deleteButton);
+                
+                this.searchInput.addEventListener('input', (e) => {
+                    this.searchQuery = e.target.value.toLowerCase();
+                    this.renderTodos();
+                });
 
-                container.appendChild(entry);
-            });
-        }
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('.filter-btn.active').classList.remove('active');
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.filter;
+                        this.renderTodos();
+                    });
+                });
 
-        // Function to save history to localStorage
-        function saveHistoryToLocalStorage() {
-            localStorage.setItem('trackingHistory', JSON.stringify(history));
-        }
-
-        // Function to add session to history and save
-        function addSessionToHistory(session) {
-            history.push(session);
-            displayHistory();
-            saveHistoryToLocalStorage();
-            updateButtonState('copyData', true); // Enable Copy Current Session
-            updateButtonState('copyAllHistory', history.length > 0); // Enable Copy All History
-            updateButtonState('downloadData', history.length > 0);
-            updateButtonState('deleteAllHistory', history.length > 0);
-            updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
-        }
-
-        // Function to delete a specific history entry
-        function deleteHistoryEntry(index) {
-            history.splice(index, 1);
-            displayHistory();
-            saveHistoryToLocalStorage();
-            const hasHistory = history.length > 0;
-            updateButtonState('copyData', hasHistory); // Enable or disable based on history
-            updateButtonState('copyAllHistory', hasHistory);
-            updateButtonState('downloadData', hasHistory);
-            updateButtonState('deleteAllHistory', hasHistory);
-            updateButtonState('downloadCurrentSession', hasHistory); // Enable or disable Download Current Session
-        }
-
-        // Function to delete all history entries
-        function deleteAllHistoryEntries() {
-            if (history.length === 0) return;
-            if (confirm('Are you sure you want to delete all tracking history?')) {
-                history.length = 0; // Clear the array
-                displayHistory();
-                saveHistoryToLocalStorage();
-                updateButtonState('copyData', false); // Disable Copy Current Session
-                updateButtonState('copyAllHistory', false); // Disable Copy All History
-                updateButtonState('downloadData', false);
-                updateButtonState('deleteAllHistory', false);
-                updateButtonState('downloadCurrentSession', false); // Disable Download Current Session
-                alert('All tracking history has been deleted.');
-            }
-        }
-
-        // Start Button Event Listener
-        document.getElementById('startButton').addEventListener('click', function() {
-            const userNameInput = document.getElementById('userName').value.trim();
-            if (!userNameInput) {
-                alert('Please enter your name before starting the timer.');
-                return;
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
             }
 
-            if (isTracking) {
-                alert("Tracking is already in progress. Please stop the current session before starting a new one.");
-                return;
+            addTodo() {
+                const title = this.todoTitle.value.trim();
+                if (!title) return;
+
+                const todo = {
+                    id: Date.now().toString(),
+                    title,
+                    description: this.todoDescription.value.trim(),
+                    priority: this.todoPriority.value,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                    order: this.todos.length
+                };
+
+                this.todos.push(todo);
+                this.saveTodos();
+                this.renderTodos();
+                this.updateStats();
+                this.clearForm();
             }
 
-            isTracking = true;
-            startTime = Date.now();
-            updateDisplay('nameDisplay', `Name: <span class="highlight">${userNameInput}</span>`);
-            updateDisplay('startTimeDisplay', `Start Time: <span class="highlight">${new Date(startTime).toLocaleString()}</span>`);
-            updateDisplay('stopTimeDisplay', `Stop Time: <span class="highlight">N/A</span>`);
-            updateDisplay('totalTimeDisplay', `Total Time: <span class="highlight">N/A</span>`);
-            updateDisplay('pauseTimeDisplay', `Pause Time: <span class="highlight">N/A</span>`);
-            updateDisplay('resumeTimeDisplay', `Resume Time: <span class="highlight">N/A</span>`);
-            updateButtonState('startButton', false);
-            updateButtonState('pauseButton', true);
-            updateButtonState('stopButton', true);
-            updateButtonState('copyData', false); // Disable Copy Current Session during tracking
-            updateButtonState('copyAllHistory', history.length > 0);
-            updateButtonState('downloadData', history.length > 0);
-            updateButtonState('deleteAllHistory', history.length > 0);
-            updateButtonState('downloadCurrentSession', history.length > 0); // Maintain state
-            updateStatus('Tracking');
-
-            // Initialize current session
-            currentSession = {
-                name: userNameInput,
-                startTime: new Date(startTime).toLocaleString(),
-                stopTime: null,
-                totalTime: null
-            };
-        });
-
-        // Stop Button Event Listener
-        document.getElementById('stopButton').addEventListener('click', function() {
-            if (!isTracking) return;
-
-            isTracking = false;
-            stopTime = Date.now();
-            updateDisplay('stopTimeDisplay', `Stop Time: <span class="highlight">${new Date(stopTime).toLocaleString()}</span>`);
-            
-            // Calculate total time in minutes
-            totalTime = stopTime - startTime;
-            const formattedTotalTime = formatTime(totalTime);
-            updateDisplay('totalTimeDisplay', `Total Time: <span class="highlight">${formattedTotalTime}</span>`);
-
-            // Update current session
-            currentSession.stopTime = new Date(stopTime).toLocaleString();
-            currentSession.totalTime = formattedTotalTime;
-
-            addSessionToHistory(currentSession); // Save session to history
-            currentSession = null; // Reset current session
-
-            updateButtonState('startButton', true);
-            updateButtonState('pauseButton', false);
-            updateButtonState('resumeButton', false);
-            updateButtonState('stopButton', false);
-            // Enable Copy Data since a session has been added
-            updateButtonState('copyData', history.length > 0);
-            updateButtonState('copyAllHistory', history.length > 0);
-            updateButtonState('downloadData', history.length > 0);
-            updateButtonState('deleteAllHistory', history.length > 0);
-            updateButtonState('downloadCurrentSession', history.length > 0); // Enable Download Current Session
-            updateStatus('Stopped');
-        });
-
-        // Pause Button Event Listener
-        document.getElementById('pauseButton').addEventListener('click', function() {
-            if (!isTracking) return;
-
-            pauseTime = Date.now();
-            updateDisplay('pauseTimeDisplay', `Pause Time: <span class="highlight">${new Date(pauseTime).toLocaleString()}</span>`);
-            updateButtonState('pauseButton', false);
-            updateButtonState('resumeButton', true);
-            updateStatus('Paused');
-        });
-
-        // Resume Button Event Listener
-        document.getElementById('resumeButton').addEventListener('click', function() {
-            if (!isTracking) return;
-
-            resumeTime = Date.now();
-            startTime += (resumeTime - pauseTime); // Adjust the start time
-            updateDisplay('resumeTimeDisplay', `Resume Time: <span class="highlight">${new Date(resumeTime).toLocaleString()}</span>`);
-            updateButtonState('pauseButton', true);
-            updateButtonState('resumeButton', false);
-            updateStatus('Tracking');
-        });
-
-        // Copy Current Session Button Event Listener
-        document.getElementById('copyData').addEventListener('click', function() {
-            // Ensure there's at least one session in history
-            if (history.length === 0) {
-                alert('No session data available to copy.');
-                return;
+            clearForm() {
+                this.todoTitle.value = '';
+                this.todoDescription.value = '';
+                this.todoPriority.value = 'medium';
+                this.todoTitle.focus();
             }
 
-            const lastSession = history[history.length - 1];
-            const sessionText = `Name: ${lastSession.name}\nStart Time: ${lastSession.startTime}\nStop Time: ${lastSession.stopTime}\nTotal Time: ${lastSession.totalTime}`;
-            navigator.clipboard.writeText(sessionText)
-                .then(() => alert('Current session data copied to clipboard!'))
-                .catch(err => alert('Failed to copy session data.'));
-        });
-
-        // Copy All History Button Event Listener
-        document.getElementById('copyAllHistory').addEventListener('click', function() {
-            if (history.length === 0) {
-                alert('No history data available to copy.');
-                return;
-            }
-
-            const allHistoryText = history.map((session, index) => 
-                `Session ${index + 1}\nName: ${session.name}\nStart Time: ${session.startTime}\nStop Time: ${session.stopTime}\nTotal Time: ${session.totalTime}\n`
-            ).join('\n');
-
-            navigator.clipboard.writeText(allHistoryText)
-                .then(() => alert('All history data copied to clipboard!'))
-                .catch(err => alert('Failed to copy history data.'));
-        });
-
-        // Download Data Button Event Listener (Download All History)
-        document.getElementById('downloadData').addEventListener('click', function() {
-            if (history.length === 0) {
-                alert('No history to download.');
-                return;
-            }
-            const historyText = history.map((session, index) => 
-                `Session ${index + 1}\nName: ${session.name}\nStart Time: ${session.startTime}\nStop Time: ${session.stopTime}\nTotal Time: ${session.totalTime}\n`
-            ).join('\n');
-            const blob = new Blob([historyText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tracking_history.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        // Delete All History Button Event Listener
-        document.getElementById('deleteAllHistory').addEventListener('click', function() {
-            deleteAllHistoryEntries();
-        });
-
-        // Save Edited History Button Event Listener
-        document.getElementById('saveEditedHistory').addEventListener('click', function() {
-            const editedHistory = document.getElementById('editHistory').value.trim();
-            if (!editedHistory) {
-                alert('Please enter some history to save.');
-                return;
-            }
-
-            // Parse the edited history and update the history array
-            const sessions = editedHistory.split('\n\n');
-            const newHistory = [];
-            let isValid = true;
-
-            sessions.forEach(sessionText => {
-                const lines = sessionText.split('\n');
-                if (lines.length < 4) {
-                    isValid = false;
-                    return;
+            toggleTodo(id) {
+                const todo = this.todos.find(t => t.id === id);
+                if (todo) {
+                    todo.completed = !todo.completed;
+                    todo.completedAt = todo.completed ? new Date().toISOString() : null;
+                    this.saveTodos();
+                    this.renderTodos();
+                    this.updateStats();
                 }
-                const nameLine = lines.find(line => line.startsWith('Name:'));
-                const startTimeLine = lines.find(line => line.startsWith('Start Time:'));
-                const stopTimeLine = lines.find(line => line.startsWith('Stop Time:'));
-                const totalTimeLine = lines.find(line => line.startsWith('Total Time:'));
+            }
 
-                if (!nameLine || !startTimeLine || !stopTimeLine || !totalTimeLine) {
-                    isValid = false;
+            deleteTodo(id) {
+                this.todos = this.todos.filter(t => t.id !== id);
+                this.saveTodos();
+                this.renderTodos();
+                this.updateStats();
+            }
+
+            editTodo(id) {
+                const todo = this.todos.find(t => t.id === id);
+                if (!todo) return;
+
+                const newTitle = prompt('Edit task title:', todo.title);
+                if (newTitle !== null && newTitle.trim()) {
+                    todo.title = newTitle.trim();
+                    this.saveTodos();
+                    this.renderTodos();
+                }
+            }
+
+            getFilteredTodos() {
+                let filtered = this.todos;
+
+                // Apply search filter
+                if (this.searchQuery) {
+                    filtered = filtered.filter(todo => 
+                        todo.title.toLowerCase().includes(this.searchQuery) ||
+                        todo.description.toLowerCase().includes(this.searchQuery)
+                    );
+                }
+
+                // Apply status/priority filter
+                switch (this.currentFilter) {
+                    case 'pending':
+                        filtered = filtered.filter(todo => !todo.completed);
+                        break;
+                    case 'completed':
+                        filtered = filtered.filter(todo => todo.completed);
+                        break;
+                    case 'high':
+                    case 'medium':
+                    case 'low':
+                        filtered = filtered.filter(todo => todo.priority === this.currentFilter);
+                        break;
+                }
+
+                return filtered.sort((a, b) => a.order - b.order);
+            }
+
+            renderTodos() {
+                const filteredTodos = this.getFilteredTodos();
+                
+                if (filteredTodos.length === 0) {
+                    this.todoList.style.display = 'none';
+                    this.emptyState.style.display = 'block';
                     return;
                 }
 
-                const name = nameLine.split(': ')[1];
-                const startTime = startTimeLine.split(': ')[1];
-                const stopTime = stopTimeLine.split(': ')[1];
-                const totalTime = totalTimeLine.split(': ')[1];
+                this.todoList.style.display = 'block';
+                this.emptyState.style.display = 'none';
 
-                newHistory.push({ name, startTime, stopTime, totalTime });
-            });
-
-            if (!isValid) {
-                alert('Edited history format is incorrect. Please ensure each session has Name, Start Time, Stop Time, and Total Time.');
-                return;
+                this.todoList.innerHTML = filteredTodos.map(todo => this.createTodoHTML(todo)).join('');
+                
+                // Add event listeners to newly created elements
+                this.addTodoEventListeners();
             }
 
-            // Update history array
-            history.length = 0; // Clear existing history
-            history.push(...newHistory);
-            displayHistory();
-            saveHistoryToLocalStorage();
-            const hasHistory = history.length > 0;
-            updateButtonState('copyData', hasHistory); // Enable or disable based on history
-            updateButtonState('copyAllHistory', hasHistory);
-            updateButtonState('downloadData', hasHistory);
-            updateButtonState('deleteAllHistory', hasHistory);
-            updateButtonState('downloadCurrentSession', hasHistory); // Enable or disable Download Current Session
-            alert('Edited History Saved Successfully!');
-        });
-
-        // Enable Save Edited History button when textarea is modified
-        document.getElementById('editHistory').addEventListener('input', function() {
-            const content = this.value.trim();
-            updateButtonState('saveEditedHistory', content.length > 0);
-        });
-
-        // New: Download Current Session Button Event Listener
-        document.getElementById('downloadCurrentSession').addEventListener('click', function() {
-            if (history.length === 0) {
-                alert('No session data available to download.');
-                return;
+            createTodoHTML(todo) {
+                const date = new Date(todo.createdAt).toLocaleDateString();
+                return `
+                    <div class="todo-item ${todo.completed ? 'completed' : ''}" 
+                         draggable="true" 
+                         data-id="${todo.id}">
+                        <div class="todo-content">
+                            <input type="checkbox" 
+                                   class="todo-checkbox" 
+                                   ${todo.completed ? 'checked' : ''} 
+                                   data-id="${todo.id}">
+                            <div class="todo-text">
+                                <div class="todo-title ${todo.completed ? 'completed' : ''}">${todo.title}</div>
+                                ${todo.description ? `<div class="todo-description">${todo.description}</div>` : ''}
+                                <div class="todo-meta">
+                                    <span class="priority-badge priority-${todo.priority}">${todo.priority}</span>
+                                    <span class="todo-date">Created ${date}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="todo-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="app.editTodo('${todo.id}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="app.deleteTodo('${todo.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
             }
 
-            const lastSession = history[history.length - 1];
-            const sessionText = `Name: ${lastSession.name}\nStart Time: ${lastSession.startTime}\nStop Time: ${lastSession.stopTime}\nTotal Time: ${lastSession.totalTime}`;
+            addTodoEventListeners() {
+                // Checkbox listeners
+                document.querySelectorAll('.todo-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        this.toggleTodo(e.target.dataset.id);
+                    });
+                });
 
-            // Sanitize filename by removing invalid characters
-            const sanitizeFilename = (name) => {
-                return name.replace(/[^a-z0-9_\-]/gi, '_');
-            };
+                // Drag and drop listeners
+                document.querySelectorAll('.todo-item').forEach(item => {
+                    item.addEventListener('dragstart', (e) => {
+                        this.draggedElement = e.target;
+                        e.target.classList.add('dragging');
+                    });
 
-            const fileName = `${sanitizeFilename(lastSession.name)}_session.txt`;
+                    item.addEventListener('dragend', (e) => {
+                        e.target.classList.remove('dragging');
+                        this.draggedElement = null;
+                    });
 
-            const blob = new Blob([sessionText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
+                    item.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                    });
+
+                    item.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (this.draggedElement && this.draggedElement !== e.target) {
+                            this.reorderTodos(this.draggedElement.dataset.id, e.target.dataset.id);
+                        }
+                    });
+                });
+            }
+
+            reorderTodos(draggedId, targetId) {
+                const draggedIndex = this.todos.findIndex(t => t.id === draggedId);
+                const targetIndex = this.todos.findIndex(t => t.id === targetId);
+                
+                if (draggedIndex === -1 || targetIndex === -1) return;
+
+                // Remove dragged todo and insert at target position
+                const [draggedTodo] = this.todos.splice(draggedIndex, 1);
+                this.todos.splice(targetIndex, 0, draggedTodo);
+
+                // Update order values
+                this.todos.forEach((todo, index) => {
+                    todo.order = index;
+                });
+
+                this.saveTodos();
+                this.renderTodos();
+            }
+
+            updateStats() {
+                const total = this.todos.length;
+                const completed = this.todos.filter(t => t.completed).length;
+                const pending = total - completed;
+                const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                document.getElementById('totalTasks').textContent = total;
+                document.getElementById('completedTasks').textContent = completed;
+                document.getElementById('pendingTasks').textContent = pending;
+                document.getElementById('completionRate').textContent = `${completionRate}%`;
+            }
+
+            initializeTheme() {
+                const savedTheme = localStorage.getItem('todoTheme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                this.updateThemeIcon(savedTheme);
+            }
+
+            toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('todoTheme', newTheme);
+                this.updateThemeIcon(newTheme);
+            }
+
+            updateThemeIcon(theme) {
+                this.themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+
+            saveTodos() {
+                localStorage.setItem('todos', JSON.stringify(this.todos));
+            }
+
+            loadTodos() {
+                const saved = localStorage.getItem('todos');
+                return saved ? JSON.parse(saved) : [];
+            }
+        }
+
+        // Initialize the app
+        const app = new TodoApp();
     </script>
 </body>
 </html>
